@@ -1,0 +1,5 @@
+- On Linux and macOS, use native Bash-compatible commands and POSIX paths; do not use Windows drive-letter paths or non-native shells.
+- Discover the runtime home and shell from the environment, quote paths with spaces, and never embed a literal home username or hard-coded home path.
+- Commands start in the current project directory; change directories only when a command genuinely targets another directory.
+- Use `read` for known files, semantic navigation for code, and `rg`/`rg --files` for bounded text search and discovery. Use available repository tools and documentation.
+- Scope searches to relevant paths. Avoid `.git`, dependency/vendor directories, generated output, and build artifacts unless they are explicitly relevant.

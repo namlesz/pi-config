@@ -1,0 +1,5 @@
+- On Windows (Git Bash), use Bash syntax with quoted forward-slash paths. Use PowerShell only through an explicit `powershell.exe -NoProfile -Command ...` invocation; do not assume PowerShell is the active shell.
+- Discover Windows paths from the runtime environment and keep paths with spaces quoted; do not embed a literal home username or hard-coded home path.
+- Commands start in the current project directory; change directories only when a command genuinely targets another directory.
+- Use `read` for known files, semantic navigation for code, and `rg`/`rg --files` for bounded text search and discovery. Use available repository tools and documentation.
+- Scope searches to relevant paths. Avoid `.git`, dependency/vendor directories, generated output, and build artifacts unless they are explicitly relevant.
