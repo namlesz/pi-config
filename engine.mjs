@@ -185,10 +185,10 @@ export async function chooseHost(opts) {
 }
 export function renderAppend(shared, hostText) {
   const start = shared.indexOf("# Environment and tool use");
-  const end = shared.indexOf("## Ownership and delegation", start);
+  const end = shared.indexOf("## Local orchestration policy", start);
   if (start < 0 || end < 0)
     fail(
-      "APPEND_SYSTEM.md is missing the expected Environment/Ownership sections",
+      "APPEND_SYSTEM.md is missing the expected Environment/Local orchestration sections",
     );
   return `${shared.slice(0, start)}# Environment and tool use\n\n${hostText.trim()}\n\n${shared.slice(end)}`;
 }
