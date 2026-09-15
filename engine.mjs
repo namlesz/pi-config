@@ -749,6 +749,8 @@ export async function install(opts) {
     await installStage(stage, settings);
     await fsp.mkdir(paths.backup, { recursive: true });
     await activateProfile(paths, stage, activation);
+    if (fs.existsSync(stage))
+      await fsp.rm(stage, { recursive: true, force: true });
     if (fs.existsSync(paths.sibling)) {
       await fsp.rename(
         paths.sibling,

@@ -3,8 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const installer = path.join(root, "installer");
+const root = path.dirname(fileURLToPath(import.meta.url));
+const installer = root;
 const payloadRoot = path.join(installer, "payload");
 const output = path.join(installer, "pi-portable-installer.sh");
 const enginePath = path.join(installer, "engine.mjs");

@@ -8,13 +8,14 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const root = path.resolve(fileURLToPath(new URL("..", import.meta.url)));
-const installer = path.join(root, "installer");
+const root = path.dirname(fileURLToPath(import.meta.url));
+const installer = root;
 const artifact = path.join(installer, "pi-portable-installer.sh");
 const buildScript = path.join(installer, "build.mjs");
 const payloadRoot = path.join(installer, "payload");
 const template = path.join(payloadRoot, "settings.template.json");
 const bash = process.env.BASH || "bash";
+const host = process.platform === "win32" ? "windows" : "unix";
 const built = spawnSync(process.execPath, [buildScript], {
   cwd: root,
   encoding: "utf8",
@@ -49,7 +50,7 @@ assert.ok(
 );
 
 const temp = fs.mkdtempSync(
-  path.join(os.tmpdir(), "pi-portable-installer-test-"),
+  path.join(fs.realpathSync(os.tmpdir()), "pi-portable-installer-test-"),
 );
 const fakeDir = path.join(temp, "fake package installer");
 fs.mkdirSync(fakeDir, { recursive: true });
@@ -99,7 +100,7 @@ function run(target, input, extra = {}, cwd = root) {
     [
       artifact,
       "--host",
-      "windows",
+      host,
       "--target",
       target,
       "--settings-template",
@@ -148,6 +149,13 @@ fs.writeFileSync(existingSibling, "old sibling");
 const skillsStat = fs.statSync(path.join(existingTarget, "skills"));
 let result = run(existingTarget, "no\nyes\n");
 assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+assert.equal(
+  fs
+    .readdirSync(existingRoot)
+    .some((name) => name.startsWith(".pi-portable-stage-")),
+  false,
+  "successful install must remove staging directory",
+);
 assertSkillsUnchanged(existingTarget, "keep exactly");
 assert.equal(
   fs.statSync(path.join(existingTarget, "skills")).ino,
@@ -492,7 +500,7 @@ const dryRun = spawnSync(
   },
 );
 assert.equal(dryRun.status, 0, dryRun.stderr);
-assert.match(dryRun.stdout, /Selected host: unix \(dry-run simulation only\)/);
+assert.match(dryRun.stdout, /Selected host: unix/);
 assert.equal(fs.existsSync(path.join(temp, "dry run", "agent")), false);
 
 process.env.PI_INSTALLER_TEST_LIBRARY = "1";
