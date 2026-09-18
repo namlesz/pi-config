@@ -302,6 +302,13 @@ function validatePaths(opts) {
   }
   const sibling = path.join(parent, "web-search.json");
   if (fs.existsSync(sibling)) rejectSymlinkComponents(sibling);
+  const lensDir = path.join(home, ".pi-lens");
+  const lensConfig = path.join(lensDir, "config.json");
+  rejectSymlinkComponents(lensConfig);
+  if (fs.existsSync(lensConfig) && !fs.statSync(lensConfig).isFile())
+    fail(
+      `unsafe pi-lens config path: expected a file: ${display(lensConfig)}`,
+    );
   const backup = path.resolve(
     expandHome(
       opts.backup ||
@@ -322,7 +329,22 @@ function validatePaths(opts) {
     fail("unsafe overlap: target and backup overlap");
   if (overlap(target, sibling) || overlap(backup, sibling))
     fail("unsafe overlap: sibling path overlaps target or backup");
-  return { home, target, parent, sibling, backup, source: installerRoot };
+  if (
+    overlap(target, lensConfig) ||
+    overlap(backup, lensConfig) ||
+    overlap(sibling, lensConfig)
+  )
+    fail("unsafe overlap: pi-lens config overlaps managed paths");
+  return {
+    home,
+    target,
+    parent,
+    sibling,
+    lensDir,
+    lensConfig,
+    backup,
+    source: installerRoot,
+  };
 }
 function recursivelyRender(value, context, parentKey = "") {
   if (Array.isArray(value))
@@ -576,9 +598,10 @@ const installConfirmation =
 function scopeText(paths, settings, host) {
   return [
     `Selected host: ${host}${host === detectedHost() ? "" : " (dry-run simulation only)"}`,
-    "WARNING: this replaces the managed Pi profile; it does not merge configuration.",
+    "WARNING: this replaces the managed Pi profile and managed external configs; it does not merge configuration.",
     `Target profile: ${display(paths.target)}`,
     `Sibling managed config: ${display(paths.sibling)}`,
+    `Global pi-lens config: ${display(paths.lensConfig)}`,
     `Old profile/config archive (outside target): ${display(paths.backup)}`,
     `Clean allowlist: ${PROFILE_FILES.join(", ")}`,
     `Latest package installs: ${settings.packages.map(packageSource).join(", ")}`,
@@ -619,6 +642,25 @@ async function writeSiblingAtomic(paths, content) {
       await fsp.rm(temporary, { force: true });
     } catch (cleanupError) {
       error.siblingTemporaryCleanup = cleanupError;
+    }
+    throw error;
+  }
+}
+async function writeLensConfigAtomic(paths, content) {
+  await fsp.mkdir(paths.lensDir, { recursive: true });
+  const temporary = path.join(
+    paths.lensDir,
+    `.pi-lens-config-${process.pid}-${Math.random().toString(36).slice(2)}.tmp`,
+  );
+  try {
+    await fsp.writeFile(temporary, content, { flag: "wx" });
+    await fsp.rename(temporary, paths.lensConfig);
+  } catch (error) {
+    error.lensTemporary = temporary;
+    try {
+      await fsp.rm(temporary, { force: true });
+    } catch (cleanupError) {
+      error.lensTemporaryCleanup = cleanupError;
     }
     throw error;
   }
@@ -670,6 +712,10 @@ async function rollback(
   movedSibling,
   newSibling,
   siblingTemporary,
+  movedLensConfig,
+  newLensConfig,
+  lensTemporary,
+  lensDirCreated,
 ) {
   const errors = [];
   const attempt = async (label, action) => {
@@ -713,6 +759,30 @@ async function rollback(
     await attempt("restore original sibling config", () =>
       fsp.rename(path.join(paths.backup, "web-search.json"), paths.sibling),
     );
+  if (lensTemporary)
+    await attempt("temporary pi-lens config cleanup", () =>
+      fsp.rm(lensTemporary, { force: true }),
+    );
+  if (newLensConfig)
+    await attempt("remove new pi-lens config", () =>
+      fsp.rm(paths.lensConfig, { force: true }),
+    );
+  if (movedLensConfig)
+    await attempt("restore original pi-lens config", async () => {
+      await fsp.mkdir(paths.lensDir, { recursive: true });
+      await fsp.rename(
+        path.join(paths.backup, "pi-lens", "config.json"),
+        paths.lensConfig,
+      );
+    });
+  if (lensDirCreated)
+    await attempt("remove created pi-lens directory", async () => {
+      try {
+        await fsp.rmdir(paths.lensDir);
+      } catch (error) {
+        if (!["ENOENT", "ENOTEMPTY"].includes(error.code)) throw error;
+      }
+    });
   return errors;
 }
 export async function install(opts) {
@@ -731,7 +801,7 @@ export async function install(opts) {
   const rtkGuidance = await chooseRtkGuidance();
   if (rtkGuidance === null || !(await confirm(installConfirmation))) {
     console.log(
-      "Cancelled; no target, sibling config, archive, downloads, or installs were changed.",
+      "Cancelled; no target, managed configs, archive, downloads, or installs were changed.",
     );
     return;
   }
@@ -743,7 +813,11 @@ export async function install(opts) {
   const activation = { created: false, moved: [], added: [] };
   let movedSibling = false,
     newSibling = false,
-    siblingTemporary;
+    siblingTemporary,
+    movedLensConfig = false,
+    newLensConfig = false,
+    lensTemporary,
+    lensDirCreated = false;
   try {
     await writePayload(stage, files, settings, host);
     await installStage(stage, settings);
@@ -751,6 +825,25 @@ export async function install(opts) {
     await activateProfile(paths, stage, activation);
     if (fs.existsSync(stage))
       await fsp.rm(stage, { recursive: true, force: true });
+    lensDirCreated = !fs.existsSync(paths.lensDir);
+    if (fs.existsSync(paths.lensConfig)) {
+      await fsp.mkdir(path.join(paths.backup, "pi-lens"), { recursive: true });
+      await fsp.rename(
+        paths.lensConfig,
+        path.join(paths.backup, "pi-lens", "config.json"),
+      );
+      movedLensConfig = true;
+    }
+    try {
+      await writeLensConfigAtomic(
+        paths,
+        payloadText(files, "config/pi-lens.json"),
+      );
+      newLensConfig = true;
+    } catch (error) {
+      lensTemporary = error.lensTemporary;
+      throw error;
+    }
     if (fs.existsSync(paths.sibling)) {
       await fsp.rename(
         paths.sibling,
@@ -770,9 +863,10 @@ export async function install(opts) {
     }
     await fsp.writeFile(
       path.join(paths.backup, "INSTALL-MANIFEST.json"),
-      `${JSON.stringify({ target: display(paths.target), sibling: display(paths.sibling), packages, archivedAt: new Date().toISOString(), retired: ["agent/agents", "subagents.json", "subagent-extensions/luna-fast.ts", "prompts/friday.md"] }, null, 2)}\n`,
+      `${JSON.stringify({ target: display(paths.target), sibling: display(paths.sibling), lensConfig: display(paths.lensConfig), packages, archivedAt: new Date().toISOString(), retired: ["agent/agents", "subagents.json", "subagent-extensions/luna-fast.ts", "prompts/friday.md"] }, null, 2)}\n`,
     );
     console.log(`Installed clean profile at ${display(paths.target)}.`);
+    console.log(`Installed pi-lens config at ${display(paths.lensConfig)}.`);
     console.log(`Archive preserved at ${display(paths.backup)}.`);
     console.log(
       `Add ${display(path.join(paths.target, "bin"))} to PATH to use the profile-local pi.`,
@@ -785,10 +879,18 @@ export async function install(opts) {
       movedSibling,
       newSibling,
       siblingTemporary,
+      movedLensConfig,
+      newLensConfig,
+      lensTemporary,
+      lensDirCreated,
     );
     if (error.siblingTemporaryCleanup)
       rollbackErrors.push(
         `temporary sibling cleanup: ${error.siblingTemporaryCleanup.message}`,
+      );
+    if (error.lensTemporaryCleanup)
+      rollbackErrors.push(
+        `temporary pi-lens config cleanup: ${error.lensTemporaryCleanup.message}`,
       );
     try {
       if (fs.existsSync(stage))
