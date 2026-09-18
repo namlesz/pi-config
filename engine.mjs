@@ -646,6 +646,19 @@ async function writeSiblingAtomic(paths, content) {
     throw error;
   }
 }
+async function moveFilePortable(source, destination) {
+  await fsp.copyFile(source, destination, fs.constants.COPYFILE_EXCL);
+  try {
+    await fsp.rm(source);
+  } catch (error) {
+    try {
+      await fsp.rm(destination, { force: true });
+    } catch (cleanupError) {
+      error.portableMoveCleanup = cleanupError;
+    }
+    throw error;
+  }
+}
 async function writeLensConfigAtomic(paths, content) {
   await fsp.mkdir(paths.lensDir, { recursive: true });
   const temporary = path.join(
@@ -770,7 +783,7 @@ async function rollback(
   if (movedLensConfig)
     await attempt("restore original pi-lens config", async () => {
       await fsp.mkdir(paths.lensDir, { recursive: true });
-      await fsp.rename(
+      await moveFilePortable(
         path.join(paths.backup, "pi-lens", "config.json"),
         paths.lensConfig,
       );
@@ -828,7 +841,7 @@ export async function install(opts) {
     lensDirCreated = !fs.existsSync(paths.lensDir);
     if (fs.existsSync(paths.lensConfig)) {
       await fsp.mkdir(path.join(paths.backup, "pi-lens"), { recursive: true });
-      await fsp.rename(
+      await moveFilePortable(
         paths.lensConfig,
         path.join(paths.backup, "pi-lens", "config.json"),
       );
@@ -891,6 +904,10 @@ export async function install(opts) {
     if (error.lensTemporaryCleanup)
       rollbackErrors.push(
         `temporary pi-lens config cleanup: ${error.lensTemporaryCleanup.message}`,
+      );
+    if (error.portableMoveCleanup)
+      rollbackErrors.push(
+        `portable file move cleanup: ${error.portableMoveCleanup.message}`,
       );
     try {
       if (fs.existsSync(stage))

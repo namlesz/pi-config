@@ -56,6 +56,7 @@ assert.equal(lensConfigJson.guard.sharedCheckout, true);
 assert.equal(lensConfigJson.actionableWarnings.enabled, true);
 assert.equal(lensConfigJson.actionableWarnings.includeLspCodeActions, true);
 assert.equal(lensConfigJson.actionableWarnings.autoFix.enabled, false);
+assert.equal(lensConfigJson.startup.scans.enabled, false);
 
 const temp = fs.mkdtempSync(
   path.join(fs.realpathSync(os.tmpdir()), "pi-portable-installer-test-"),

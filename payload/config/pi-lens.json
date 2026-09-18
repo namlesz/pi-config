@@ -44,5 +44,10 @@
   },
   "tools": {
     "lazy": true
+  },
+  "startup": {
+    "scans": {
+      "enabled": false
+    }
   }
 }
