@@ -14,6 +14,7 @@ const artifact = path.join(installer, "pi-portable-installer.sh");
 const buildScript = path.join(installer, "build.mjs");
 const payloadRoot = path.join(installer, "payload");
 const template = path.join(payloadRoot, "settings.template.json");
+const lensConfigTemplate = path.join(payloadRoot, "config", "pi-lens.json");
 const bash = process.env.BASH || "bash";
 const host = process.platform === "win32" ? "windows" : "unix";
 const built = spawnSync(process.execPath, [buildScript], {
@@ -48,10 +49,20 @@ assert.ok(
     (typeof item === "string" ? item : item.source).startsWith("npm:"),
   ),
 );
+const lensConfigJson = JSON.parse(fs.readFileSync(lensConfigTemplate, "utf8"));
+assert.equal(lensConfigJson.tools.lazy, true);
+assert.equal(lensConfigJson.contextInjection.enabled, false);
+assert.equal(lensConfigJson.guard.sharedCheckout, true);
+assert.equal(lensConfigJson.actionableWarnings.enabled, true);
+assert.equal(lensConfigJson.actionableWarnings.includeLspCodeActions, true);
+assert.equal(lensConfigJson.actionableWarnings.autoFix.enabled, false);
+assert.equal(lensConfigJson.startup.scans.enabled, false);
 
 const temp = fs.mkdtempSync(
   path.join(fs.realpathSync(os.tmpdir()), "pi-portable-installer-test-"),
 );
+const fakeHome = path.join(temp, "fake home");
+fs.mkdirSync(fakeHome, { recursive: true });
 const fakeDir = path.join(temp, "fake package installer");
 fs.mkdirSync(fakeDir, { recursive: true });
 const fakeNpm = path.join(fakeDir, "npm");
@@ -110,7 +121,12 @@ function run(target, input, extra = {}, cwd = root) {
       cwd,
       input,
       encoding: "utf8",
-      env: { ...baseEnv, ...extra },
+      env: {
+        ...baseEnv,
+        HOME: fakeHome,
+        USERPROFILE: fakeHome,
+        ...extra,
+      },
     },
   );
 }
@@ -138,6 +154,9 @@ function findArchive(parent) {
 const existingRoot = path.join(temp, "existing profile");
 const existingTarget = path.join(existingRoot, "agent");
 const existingSibling = path.join(existingRoot, "web-search.json");
+const installedLensConfig = path.join(fakeHome, ".pi-lens", "config.json");
+fs.mkdirSync(path.dirname(installedLensConfig), { recursive: true });
+fs.writeFileSync(installedLensConfig, "old lens config");
 fs.mkdirSync(path.join(existingTarget, "skills"), { recursive: true });
 fs.writeFileSync(path.join(existingTarget, "stale.txt"), "remove");
 fs.writeFileSync(path.join(existingTarget, "auth.json"), "archive");
@@ -182,6 +201,17 @@ assert.equal(
 assert.equal(
   fs.existsSync(path.join(existingRoot, archiveName, "profile", "skills")),
   false,
+);
+assert.deepEqual(
+  JSON.parse(fs.readFileSync(installedLensConfig, "utf8")),
+  lensConfigJson,
+);
+assert.equal(
+  fs.readFileSync(
+    path.join(existingRoot, archiveName, "pi-lens", "config.json"),
+    "utf8",
+  ),
+  "old lens config",
 );
 
 const caseRoot = path.join(temp, "case-insensitive skills");
@@ -251,6 +281,7 @@ fs.writeFileSync(
   "rollback keep",
 );
 fs.writeFileSync(rollbackSibling, "original sibling");
+fs.writeFileSync(installedLensConfig, "original lens config");
 result = run(rollbackTarget, "no\nyes\n", {
   PI_INSTALLER_TEST_MODE: "1",
   PI_INSTALLER_TEST_FAIL_SIBLING: "1",
@@ -263,6 +294,10 @@ assert.equal(
 );
 assertSkillsUnchanged(rollbackTarget, "rollback keep");
 assert.equal(fs.readFileSync(rollbackSibling, "utf8"), "original sibling");
+assert.equal(
+  fs.readFileSync(installedLensConfig, "utf8"),
+  "original lens config",
+);
 assert.equal(
   fs
     .readdirSync(rollbackRoot)
@@ -501,6 +536,7 @@ const dryRun = spawnSync(
 );
 assert.equal(dryRun.status, 0, dryRun.stderr);
 assert.match(dryRun.stdout, /Selected host: unix/);
+assert.match(dryRun.stdout, /Global pi-lens config:/);
 assert.equal(fs.existsSync(path.join(temp, "dry run", "agent")), false);
 
 process.env.PI_INSTALLER_TEST_LIBRARY = "1";

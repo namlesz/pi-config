@@ -1,0 +1,53 @@
+{
+  "lens": {
+    "enabled": true
+  },
+  "lsp": {
+    "enabled": true
+  },
+  "tests": {
+    "enabled": true
+  },
+  "delta": {
+    "enabled": true
+  },
+  "opengrep": {
+    "enabled": true
+  },
+  "readGuard": {
+    "enabled": true
+  },
+  "contextInjection": {
+    "enabled": false
+  },
+  "format": {
+    "enabled": true,
+    "mode": "deferred"
+  },
+  "autofix": {
+    "enabled": true
+  },
+  "guard": {
+    "enabled": false,
+    "sharedCheckout": true
+  },
+  "turnSummary": {
+    "enabled": false
+  },
+  "actionableWarnings": {
+    "enabled": true,
+    "includeLspCodeActions": true,
+    "deltaOnly": true,
+    "autoFix": {
+      "enabled": false
+    }
+  },
+  "tools": {
+    "lazy": true
+  },
+  "startup": {
+    "scans": {
+      "enabled": false
+    }
+  }
+}
