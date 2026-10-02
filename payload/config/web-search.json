@@ -1,3 +1,4 @@
 {
-  "workflow": "summary-review"
+  "workflow": "auto-summary",
+  "autoOpenBrowser": false
 }

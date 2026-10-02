@@ -23,7 +23,7 @@ const PROFILE_FILES = [
   "bin/**",
 ];
 const forbiddenResource =
-  /(^|[/\\])(auth\.json|trust\.json|models-store\.json|subagents\.json|run-history|sessions|mcp-cache|mcp-onboarding|node_modules|friday\.md|rtk(?:[-.]|$)|herdr(?:[-.]|$)|orca(?:[-.]|$)|quotas?\.json|zentui(?:\.json|$)|pi-permission-system)([/\\]|$)/i;
+  /(^|[/\\])(auth\.json|trust\.json|models-store\.json|subagents\.json|run-history|sessions|mcp-cache|mcp-onboarding|node_modules|friday\.md|rtk(?:[-.]|$)|herdr(?:[-.]|$)|orca(?:[-.]|$)|quotas?\.json|zentui(?:\.json|$))([/\\]|$)/i;
 const forbiddenContent =
   /awis02|BEGIN (?:RSA|OPENSSH|EC|PRIVATE)|sk-[A-Za-z0-9]{16,}/;
 const excludedDirectoryNames = new Set([

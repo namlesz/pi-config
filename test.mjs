@@ -46,6 +46,12 @@ const templateJson = JSON.parse(fs.readFileSync(template, "utf8"));
 assert.ok(templateJson.packages.length > 0);
 assert.ok(
   templateJson.packages.every((item) =>
+    !/ponytail/i.test(typeof item === "string" ? item : item.source),
+  ),
+  "Ponytail must remain a separate manual GitHub install",
+);
+assert.ok(
+  templateJson.packages.every((item) =>
     (typeof item === "string" ? item : item.source).startsWith("npm:"),
   ),
 );
