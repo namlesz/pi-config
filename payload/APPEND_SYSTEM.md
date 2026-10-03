@@ -30,7 +30,7 @@
 
 ## Execution and verification
 
-- Make the smallest coherent edit for approved changes. Add meaningful tests for behavior changes. Run targeted checks first; broaden them only for dependency impact, failures, or unresolved risk.
+- Follow the project's existing test setup for behavior changes. Run targeted checks first; broaden only for dependency impact, failures, or unresolved risk.
 - Report checks truthfully. Never claim unrun UI, browser, cross-platform, or other validation; do not weaken tests or suppress real diagnostics.
 - Consequential changes (public API or data formats, security or auth, concurrency, migrations, or diffs spanning several modules) get a fresh-context review of the whole diff. Classify each finding as valid, stale, invalid, out of scope, or speculative; apply accepted findings through the single writer, rerun affected checks, and escalate unresolved material choices.
 - End with a concise report: changed paths and behavior, checks run and their results, skipped validation, and residual risks.

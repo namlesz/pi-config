@@ -91,7 +91,8 @@
         "extensions": [],
         "subagentOnlyExtensions": [
           "{{PROFILE}}/npm/node_modules/pi-lens/dist/index.js",
-          "{{PROFILE}}/npm/node_modules/pi-hashline-edit-pro/index.ts"
+          "{{PROFILE}}/npm/node_modules/pi-hashline-edit-pro/index.ts",
+          "{{PROFILE}}/npm/node_modules/@dietrichgebert/ponytail/pi-extension/index.js"
         ]
       },
       "reviewer": {
@@ -145,6 +146,9 @@
           "write",
           "contact_supervisor",
           "codemode"
+        ],
+        "subagentOnlyExtensions": [
+          "{{PROFILE}}/npm/node_modules/@dietrichgebert/ponytail/pi-extension/index.js"
         ],
         "allowNestedSubagents": true
       }
