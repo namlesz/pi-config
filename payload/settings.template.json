@@ -10,10 +10,18 @@
     "npm:pi-lens",
     "npm:pi-zentui",
     "npm:@narumitw/pi-usage",
+    {
+      "source": "npm:@dietrichgebert/ponytail",
+      "skills": [
+        "-skills/ponytail-help/SKILL.md"
+      ]
+    },
     "npm:pi-hashline-edit-pro",
     "npm:pi-subagents",
+    "npm:pi-jev-skill-suggester",
+    "npm:@narumitw/pi-btw",
     "npm:pi-jev-guardian",
-    "npm:pi-jev-skill-suggester"
+    "npm:pi-hermes-memory"
   ],
   "hideThinkingBlock": false,
   "defaultTools": [

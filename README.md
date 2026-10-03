@@ -38,15 +38,13 @@ The installer does not bundle or install these skills. The local reference setup
 
 These names are an inventory, not verified download sources or a compatibility guarantee. Check each skill's dependencies and Pi compatibility before installing it. In particular, `grill-me` calls a separate `grilling` skill not present in this inventory; some skills expect a `Skill` tool. Browser checks still require approval under the profile's policy.
 
-### Ponytail (separate GitHub package)
+### Ponytail
 
-Ponytail is deliberately excluded from the installer's package list and the manual skill inventory above. If wanted, install the complete package separately using the [upstream Pi instructions](https://github.com/DietrichGebert/ponytail#pi-agent-harness):
+Ponytail is installed as the npm package `@dietrichgebert/ponytail` from the settings template, with its `ponytail-help` skill filtered out. It is not part of the manual skill inventory above.
 
-```bash
-pi install git:github.com/DietrichGebert/ponytail
-```
+### Memory data
 
-This command is for manual use after setup; the portable installer never runs it. Existing local Ponytail installations are not uninstalled by this repository change. A later clean profile replacement does not preserve a separately added package declaration, so reinstall Ponytail afterward if needed.
+`pi-hermes-memory` is installed fresh. Memory it stored in the old profile is archived with the rest of the profile and is not copied into the new one.
 
 ## Optional tools (manual installation)
 
