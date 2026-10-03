@@ -70,11 +70,10 @@ caches are never copied. Authentication must be repeated.
 function fail(message) {
   throw new Error(message);
 }
+/** Case-folds only where the default filesystem is case-insensitive (Windows, macOS). */
 function norm(p) {
-  return path
-    .resolve(p)
-    .replace(/[\\/]+$/, "")
-    .toLowerCase();
+  const resolved = path.resolve(p).replace(/[\\/]+$/, "");
+  return process.platform === "linux" ? resolved : resolved.toLowerCase();
 }
 function isWithin(parent, child) {
   const a = norm(parent);

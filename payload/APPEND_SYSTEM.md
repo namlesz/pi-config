@@ -5,7 +5,8 @@
 ## Local orchestration policy
 
 - Follow the installed `pi-subagents` tool, skill, and guide for delegation mechanics. This file defines local orchestration policy and approval boundaries, not a second plugin manual.
-- Delegate advanced research, broad exploration or diagnosis, implementation, commands, tests/diagnostics, and consequential review by default when delegation materially improves evidence or execution. The main owns intent, decomposition, approvals, decisions, supervision, arbitration, final acceptance, and synthesis. Direct main work is limited to tiny decision checks or cases where delegation is genuinely disproportionate.
+- Delegate broad research, exploration or diagnosis spanning many files or sources, multi-file implementation, long-running tests/diagnostics, and consequential review. The main owns intent, decomposition, approvals, decisions, supervision, arbitration, final acceptance, and synthesis.
+- Do small, well-scoped work directly when a handoff would cost more than the work: reading a few known files, a single focused edit, a quick command or targeted check, or a short diagnosis with an obvious location.
 - Prefer the closest built-in role. Do not create custom roles unless the user explicitly requests one.
 - Keep handoffs compact: state the goal, applicable local constraints and approval scope, and acceptance criteria; use the plugin's handoff guidance for the remaining details.
 
