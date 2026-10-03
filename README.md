@@ -1,11 +1,11 @@
 # Portable Pi installer
 
-`installer/pi-portable-installer.sh` is a small Bash launcher for the adjacent `engine.mjs`. The engine reads `installer/payload/` and the adjacent host templates at runtime, so invocation works from any current directory. It requires **Bash** (Linux/macOS Bash or Windows Git Bash), Node.js >=22.19, and npm.
+`pi-portable-installer.sh` is a small, committed Bash launcher for the adjacent `engine.mjs`. The engine reads `payload/` and the adjacent host templates at runtime, so invocation works from any current directory. It requires **Bash** (Linux/macOS Bash or Windows Git Bash), Node.js >=22.19, and npm.
 
 ```bash
-bash installer/pi-portable-installer.sh --help
-bash installer/pi-portable-installer.sh --dry-run
-bash installer/pi-portable-installer.sh --host windows
+bash pi-portable-installer.sh --help
+bash pi-portable-installer.sh --dry-run
+bash pi-portable-installer.sh --host windows
 ```
 
 The installer prompts for `windows` or `unix` when `--host` is omitted, then prints the exact clean replacement scope and requires typing `yes`. It archives the existing profile (except the existing `skills` directory, which remains in place and untouched), sibling `web-search.json`, and global `~/.pi-lens/config.json` outside the target, installs a fresh allowlist, and restores originals on failure. Never run it against the live development profile while developing the installer.
@@ -67,16 +67,18 @@ No tools below are installed or copied by these recommendations. Install only th
 | `opengrep` | Pattern-based static analysis. |
 | `csharp-ls` | C# language-server support, when working with .NET. |
 
-## Known local workaround
+## Payload safety checks
 
-See [workarounds.md](workarounds.md) for the documented foreground-import issue in `pi-subagents 0.70.0`. This is historical troubleshooting guidance, not an installer step: verify that your installed version still needs it before changing anything. No symlinks or global packages are modified automatically.
+Before any prompt or write (including `--dry-run`), the engine rejects payload files whose names match retired or private resources (`auth.json`, `sessions`, `node_modules`, …) and content containing private keys, `sk-…` tokens, or a home-path segment with the current OS username. Add other names to block (for example, a username from another machine) as a comma-separated list in `PI_INSTALLER_FORBIDDEN_NAMES`.
 
-Build and test:
+## Profile launchers
+
+The installed `bin/pi` and `bin/pi.cmd` both run `node` from `PATH`, so they keep working after a Node upgrade. That `node` must still satisfy the Pi runtime's minimum version.
+
+## Test
 
 ```bash
-node installer/build.mjs
-node installer/test.mjs
-node migration-work/runtime-smoke/background-resume.mjs
+node test.mjs
 ```
 
-The installer sandbox suite and the Windows background/resume runtime smoke passed. Linux/macOS execution remains untested.
+The sandbox suite mocks npm and Pi, uses a fake home directory, and never touches the live profile. The current suite was run on macOS; earlier versions passed on Windows. Linux is untested.

@@ -11,22 +11,11 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const root = path.dirname(fileURLToPath(import.meta.url));
 const installer = root;
 const artifact = path.join(installer, "pi-portable-installer.sh");
-const buildScript = path.join(installer, "build.mjs");
 const payloadRoot = path.join(installer, "payload");
 const template = path.join(payloadRoot, "settings.template.json");
 const lensConfigTemplate = path.join(payloadRoot, "config", "pi-lens.json");
 const bash = process.env.BASH || "bash";
 const host = process.platform === "win32" ? "windows" : "unix";
-const built = spawnSync(process.execPath, [buildScript], {
-  cwd: root,
-  encoding: "utf8",
-});
-assert.equal(
-  built.status,
-  0,
-  `${built.stdout}
-${built.stderr}`,
-);
 assert.equal(
   fs.existsSync(path.join(payloadRoot, "skills")),
   false,
@@ -257,6 +246,15 @@ assert.equal(
   fs.readFileSync(path.join(existingTarget, "launcher-profile.txt"), "utf8"),
   existingTarget,
 );
+assert.match(
+  fs.readFileSync(path.join(existingTarget, "bin", "pi"), "utf8"),
+  /\nexec node "/,
+  "Unix launcher must resolve node from PATH like pi.cmd",
+);
+assert.doesNotMatch(
+  fs.readFileSync(path.join(existingTarget, "APPEND_SYSTEM.md"), "utf8"),
+  /\{\{HOST_ENVIRONMENT\}\}/,
+);
 
 const failureRoot = path.join(temp, "failure");
 const failureTarget = path.join(failureRoot, "agent");
@@ -384,38 +382,57 @@ try {
 } catch (error) {
   console.log(`symlink guard test skipped: ${error.code || error.message}`);
 }
+function dryRunGuard(extraEnv = {}) {
+  return spawnSync(
+    bash,
+    [
+      artifact,
+      "--dry-run",
+      "--host",
+      host,
+      "--target",
+      path.join(temp, "guard dry run", "agent"),
+      "--settings-template",
+      template,
+    ],
+    { cwd: root, encoding: "utf8", env: { ...baseEnv, ...extraEnv } },
+  );
+}
 const forbiddenContentFixture = path.join(
   payloadRoot,
-  "build-secret-fixture.txt",
+  "secret-fixture.txt",
 );
-fs.writeFileSync(
-  forbiddenContentFixture,
-  "fake local path C:/Users/awis02/fixture",
-);
-try {
-  const rejected = spawnSync(process.execPath, [buildScript], {
-    cwd: root,
-    encoding: "utf8",
-  });
-  assert.notEqual(rejected.status, 0);
-  assert.match(
-    `${rejected.stdout}${rejected.stderr}`,
-    /possible secret or machine username in payload/,
-  );
-} finally {
-  fs.rmSync(forbiddenContentFixture, { force: true });
+const currentUser = os.userInfo().username;
+const forbiddenContentCases = [
+  [
+    "fake local path C:/Users/fixture-user/fixture",
+    { PI_INSTALLER_FORBIDDEN_NAMES: "unrelated, fixture-user" },
+  ],
+  ...(currentUser.length >= 3
+    ? [[`fake local path /home/${currentUser}/fixture`, {}]]
+    : []),
+];
+for (const [content, extraEnv] of forbiddenContentCases) {
+  fs.writeFileSync(forbiddenContentFixture, content);
+  try {
+    const rejected = dryRunGuard(extraEnv);
+    assert.notEqual(rejected.status, 0);
+    assert.match(
+      `${rejected.stdout}${rejected.stderr}`,
+      /possible secret or machine username in local payload/,
+    );
+  } finally {
+    fs.rmSync(forbiddenContentFixture, { force: true });
+  }
 }
 const forbiddenPathFixture = path.join(payloadRoot, "auth.json");
 fs.writeFileSync(forbiddenPathFixture, "forbidden");
 try {
-  const rejected = spawnSync(process.execPath, [buildScript], {
-    cwd: root,
-    encoding: "utf8",
-  });
+  const rejected = dryRunGuard();
   assert.notEqual(rejected.status, 0);
   assert.match(
     `${rejected.stdout}${rejected.stderr}`,
-    /forbidden payload path/,
+    /forbidden local payload path/,
   );
 } finally {
   fs.rmSync(forbiddenPathFixture, { force: true });
@@ -429,10 +446,7 @@ try {
   hostMoved = true;
   fs.symlinkSync(hostOriginal, hostSymlink, "file");
   hostLinked = true;
-  const rejected = spawnSync(process.execPath, [buildScript], {
-    cwd: root,
-    encoding: "utf8",
-  });
+  const rejected = dryRunGuard();
   assert.notEqual(rejected.status, 0);
   assert.match(`${rejected.stdout}${rejected.stderr}`, /regular file/);
 } catch (error) {
@@ -481,17 +495,6 @@ try {
   if (payloadLinked) fs.unlinkSync(payloadRoot);
   if (payloadMoved) fs.renameSync(payloadLink, payloadRoot);
 }
-const rebuilt = spawnSync(process.execPath, [buildScript], {
-  cwd: root,
-  encoding: "utf8",
-});
-assert.equal(
-  rebuilt.status,
-  0,
-  `${rebuilt.stdout}
-${rebuilt.stderr}`,
-);
-
 const runtimeCache = path.join(
   payloadRoot,
   "runtime-fixture",
@@ -566,6 +569,10 @@ assert.match(
     fs.readFileSync(path.join(installer, "host-unix.txt"), "utf8"),
   ),
   /On Linux and macOS/,
+);
+assert.throws(
+  () => renderAppend("no placeholder", "host"),
+  /HOST_ENVIRONMENT/,
 );
 await fsp.rm(temp, { recursive: true, force: true });
 console.log("installer sandbox tests passed");

@@ -34,9 +34,7 @@
     "defaultThinking": "medium",
     "agentOverrides": {
       "scout": {
-        "model": "openai-codex/gpt-6-luna",
         "thinking": "medium",
-        "fast": false,
         "defaultContext": "fresh",
         "tools": [
           "read",
@@ -50,9 +48,7 @@
         ]
       },
       "researcher": {
-        "model": "openai-codex/gpt-6-luna",
         "thinking": "medium",
-        "fast": false,
         "defaultContext": "fresh",
         "tools": [
           "read",
@@ -68,9 +64,7 @@
         ]
       },
       "evidence-auditor": {
-        "model": "openai-codex/gpt-6-luna",
         "thinking": "xhigh",
-        "fast": false,
         "defaultContext": "fresh",
         "tools": [
           "read",
@@ -85,9 +79,7 @@
         ]
       },
       "worker": {
-        "model": "openai-codex/gpt-6-luna",
         "thinking": "high",
-        "fast": false,
         "defaultContext": "fresh",
         "tools": "inherit",
         "extensions": [],
@@ -97,9 +89,7 @@
         ]
       },
       "reviewer": {
-        "model": "openai-codex/gpt-6-luna",
         "thinking": "xhigh",
-        "fast": false,
         "defaultContext": "fresh",
         "tools": [
           "read",
@@ -125,9 +115,7 @@
         ]
       },
       "oracle": {
-        "model": "openai-codex/gpt-6-luna",
         "thinking": "high",
-        "fast": false,
         "defaultContext": "fresh",
         "tools": [
           "read",
@@ -139,9 +127,7 @@
         ]
       },
       "delegate": {
-        "model": "openai-codex/gpt-6-luna",
         "thinking": "high",
-        "fast": false,
         "defaultContext": "fresh",
         "tools": [
           "read",

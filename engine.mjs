@@ -24,8 +24,23 @@ const PROFILE_FILES = [
 ];
 const forbiddenResource =
   /(^|[/\\])(auth\.json|trust\.json|models-store\.json|subagents\.json|run-history|sessions|mcp-cache|mcp-onboarding|node_modules|friday\.md|rtk(?:[-.]|$)|herdr(?:[-.]|$)|orca(?:[-.]|$)|quotas?\.json|zentui(?:\.json|$))([/\\]|$)/i;
-const forbiddenContent =
-  /awis02|BEGIN (?:RSA|OPENSSH|EC|PRIVATE)|sk-[A-Za-z0-9]{16,}/;
+/** Secrets plus home-path segments naming the current user or PI_INSTALLER_FORBIDDEN_NAMES (comma-separated). */
+function forbiddenContentPattern() {
+  let current = "";
+  try {
+    current = os.userInfo().username;
+  } catch {}
+  const names = [current, ...(process.env.PI_INSTALLER_FORBIDDEN_NAMES || "").split(",")]
+    .map((name) => name.trim())
+    .filter((name) => name.length >= 3)
+    .map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const segments = names.map((name) => `[\\\\/]${name}(?:[\\\\/]|$)`);
+  return new RegExp(
+    ["BEGIN (?:RSA|OPENSSH|EC|PRIVATE)", "sk-[A-Za-z0-9]{16,}", ...segments].join("|"),
+    "im",
+  );
+}
+const forbiddenContent = forbiddenContentPattern();
 const excludedDirectoryNames = new Set([
   ".ruff_cache",
   "__pycache__",
@@ -183,14 +198,11 @@ export async function chooseHost(opts) {
     );
   return host;
 }
+const HOST_PLACEHOLDER = "{{HOST_ENVIRONMENT}}";
 export function renderAppend(shared, hostText) {
-  const start = shared.indexOf("# Environment and tool use");
-  const end = shared.indexOf("## Local orchestration policy", start);
-  if (start < 0 || end < 0)
-    fail(
-      "APPEND_SYSTEM.md is missing the expected Environment/Local orchestration sections",
-    );
-  return `${shared.slice(0, start)}# Environment and tool use\n\n${hostText.trim()}\n\n${shared.slice(end)}`;
+  if (!shared.includes(HOST_PLACEHOLDER))
+    fail(`APPEND_SYSTEM.md is missing the ${HOST_PLACEHOLDER} placeholder`);
+  return shared.replace(HOST_PLACEHOLDER, () => hostText.trim());
 }
 function version(raw) {
   const m = String(raw).match(/(\d+)\.(\d+)\.(\d+)/);
@@ -458,8 +470,8 @@ function filesUnder(dir) {
   walk(dir);
   for (const host of ["windows", "unix"]) {
     const file = path.join(installerRoot, `host-${host}.txt`);
-    if (!fs.lstatSync(file).isFile())
-      fail(`local host template is missing: ${display(file)}`);
+    if (!fs.existsSync(file) || !fs.lstatSync(file).isFile())
+      fail(`local host template is missing or not a regular file: ${display(file)}`);
     const data = fs.readFileSync(file);
     if (forbiddenContent.test(data.toString("utf8")))
       fail(`possible secret or machine username in host template: ${host}`);
@@ -573,7 +585,7 @@ async function installStage(stage, settings) {
       cli,
     )
     .replaceAll("\\", "/");
-  const launcher = `#!/usr/bin/env sh\nHERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nPROFILE=$(CDPATH= cd -- "$HERE/.." && pwd)\ncase "$(uname -s 2>/dev/null || true)" in MINGW*|MSYS*|CYGWIN*) command -v cygpath >/dev/null 2>&1 && PROFILE=$(cygpath -w "$PROFILE");; esac\nexport PI_CODING_AGENT_DIR="$PROFILE"\nexport PATH="$HERE:$PATH"\nexec ${JSON.stringify(process.execPath)} "$HERE/../.pi-runtime/node_modules/@earendil-works/pi-coding-agent/${cliRelative}" "$@"\n`;
+  const launcher = `#!/usr/bin/env sh\nHERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nPROFILE=$(CDPATH= cd -- "$HERE/.." && pwd)\ncase "$(uname -s 2>/dev/null || true)" in MINGW*|MSYS*|CYGWIN*) command -v cygpath >/dev/null 2>&1 && PROFILE=$(cygpath -w "$PROFILE");; esac\nexport PI_CODING_AGENT_DIR="$PROFILE"\nexport PATH="$HERE:$PATH"\nexec node "$HERE/../.pi-runtime/node_modules/@earendil-works/pi-coding-agent/${cliRelative}" "$@"\n`;
   await fsp.writeFile(path.join(bin, "pi"), launcher, { mode: 0o755 });
   const cliWindows = path
     .relative(
@@ -719,17 +731,17 @@ async function activateProfile(paths, stage, activation) {
     activation.added.push(entry.name);
   }
 }
-async function rollback(
-  paths,
-  activation,
-  movedSibling,
-  newSibling,
-  siblingTemporary,
-  movedLensConfig,
-  newLensConfig,
-  lensTemporary,
-  lensDirCreated,
-) {
+async function rollback(paths, state) {
+  const {
+    activation,
+    movedSibling,
+    newSibling,
+    siblingTemporary,
+    movedLensConfig,
+    newLensConfig,
+    lensTemporary,
+    lensDirCreated,
+  } = state;
   const errors = [];
   const attempt = async (label, action) => {
     try {
@@ -823,38 +835,40 @@ export async function install(opts) {
   const stage = await fsp.mkdtemp(
     path.join(path.dirname(paths.target), ".pi-portable-stage-"),
   );
-  const activation = { created: false, moved: [], added: [] };
-  let movedSibling = false,
-    newSibling = false,
-    siblingTemporary,
-    movedLensConfig = false,
-    newLensConfig = false,
-    lensTemporary,
-    lensDirCreated = false;
+  const state = {
+    activation: { created: false, moved: [], added: [] },
+    movedSibling: false,
+    newSibling: false,
+    siblingTemporary: undefined,
+    movedLensConfig: false,
+    newLensConfig: false,
+    lensTemporary: undefined,
+    lensDirCreated: false,
+  };
   try {
     await writePayload(stage, files, settings, host);
     await installStage(stage, settings);
     await fsp.mkdir(paths.backup, { recursive: true });
-    await activateProfile(paths, stage, activation);
+    await activateProfile(paths, stage, state.activation);
     if (fs.existsSync(stage))
       await fsp.rm(stage, { recursive: true, force: true });
-    lensDirCreated = !fs.existsSync(paths.lensDir);
+    state.lensDirCreated = !fs.existsSync(paths.lensDir);
     if (fs.existsSync(paths.lensConfig)) {
       await fsp.mkdir(path.join(paths.backup, "pi-lens"), { recursive: true });
       await moveFilePortable(
         paths.lensConfig,
         path.join(paths.backup, "pi-lens", "config.json"),
       );
-      movedLensConfig = true;
+      state.movedLensConfig = true;
     }
     try {
       await writeLensConfigAtomic(
         paths,
         payloadText(files, "config/pi-lens.json"),
       );
-      newLensConfig = true;
+      state.newLensConfig = true;
     } catch (error) {
-      lensTemporary = error.lensTemporary;
+      state.lensTemporary = error.lensTemporary;
       throw error;
     }
     if (fs.existsSync(paths.sibling)) {
@@ -862,16 +876,16 @@ export async function install(opts) {
         paths.sibling,
         path.join(paths.backup, "web-search.json"),
       );
-      movedSibling = true;
+      state.movedSibling = true;
     }
     try {
       await writeSiblingAtomic(
         paths,
         payloadText(files, "config/web-search.json"),
       );
-      newSibling = true;
+      state.newSibling = true;
     } catch (error) {
-      siblingTemporary = error.siblingTemporary;
+      state.siblingTemporary = error.siblingTemporary;
       throw error;
     }
     await fsp.writeFile(
@@ -886,17 +900,7 @@ export async function install(opts) {
     );
     if (rtkGuidance) printRtkGuidance();
   } catch (error) {
-    const rollbackErrors = await rollback(
-      paths,
-      activation,
-      movedSibling,
-      newSibling,
-      siblingTemporary,
-      movedLensConfig,
-      newLensConfig,
-      lensTemporary,
-      lensDirCreated,
-    );
+    const rollbackErrors = await rollback(paths, state);
     if (error.siblingTemporaryCleanup)
       rollbackErrors.push(
         `temporary sibling cleanup: ${error.siblingTemporaryCleanup.message}`,
