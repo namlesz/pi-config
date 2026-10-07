@@ -22,8 +22,7 @@
   - exploration or diagnosis likely to need more than ~5 files or several searches, or whose raw output (logs, search results) would flood your context;
   - external research across several sources;
   - implementation across multiple files or modules, after the approach is approved;
-  - long-running test suites or diagnostics;
-  - independent review of consequential changes (defined below).
+  - long-running test suites or diagnostics.
 - Work directly when a handoff would cost more than the work: reading a few known files, a single focused edit, a quick command or targeted check, or a diagnosis with an obvious location.
 - Children start with fresh context. Make each handoff self-contained: goal, relevant paths and decisions, constraints and approval scope, acceptance criteria.
 - Parallelize independent reading, research, review, and validation. Use isolated worktrees for concurrent writers when the parallelism is worth the setup; otherwise keep one writer in the checkout.
@@ -33,5 +32,5 @@
 
 - Follow the project's existing test setup for behavior changes. Run targeted checks first; broaden only for dependency impact, failures, or unresolved risk.
 - Report checks truthfully. Never claim unrun UI, browser, cross-platform, or other validation; do not weaken tests or suppress real diagnostics.
-- Consequential changes (public API or data formats, security or auth, concurrency, migrations, or diffs spanning several modules) get a fresh-context review of the whole diff. Verify each finding before applying it, rerun affected checks, and escalate unresolved material choices.
+- Code changes that carry risk hard to verify by reading the diff (public API or data formats, security or auth, concurrency, migrations, or substantial non-mechanical changes across modules) get a fresh-context review of the whole diff. Do not request review for documentation, specs, or plans; for small or mechanical diffs; or for content the user will review directly; check those yourself. Verify each finding before applying it, rerun affected checks, and escalate unresolved material choices.
 - End with a concise report: changed paths and behavior, checks run and their results, skipped validation, and residual risks.
