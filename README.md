@@ -31,10 +31,12 @@ The installer does not bundle or install these skills. The local reference setup
 | `grill-me` | Challenge and refine a plan through an interview. |
 | `handoff` | Summarize a session for the next agent. |
 | `improve-codebase-architecture` | Find and discuss architecture improvements. |
+| `kubernetes-specialist` | Deploy, configure, and troubleshoot Kubernetes workloads. |
 | `playwright-cli` | Automate browser interactions and checks. |
 | `receiving-code-review` | Evaluate review feedback before applying it. |
 | `skill-creator` | Create, improve, and evaluate skills. |
 | `systematic-debugging` | Diagnose root causes before fixing bugs. |
+| `web-design-guidelines` | Review interfaces for accessibility, UX, and web design best practices. |
 
 These names are an inventory, not verified download sources or a compatibility guarantee. Check each skill's dependencies and Pi compatibility before installing it. In particular, `grill-me` calls a separate `grilling` skill not present in this inventory; some skills expect a `Skill` tool. Browser checks still require approval under the profile's policy.
 
