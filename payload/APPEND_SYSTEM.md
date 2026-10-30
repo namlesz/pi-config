@@ -34,3 +34,7 @@
 - Report checks truthfully. Never claim unrun UI, browser, cross-platform, or other validation; do not weaken tests or suppress real diagnostics.
 - Code changes that carry risk hard to verify by reading the diff (public API or data formats, security or auth, concurrency, migrations, or substantial non-mechanical changes across modules) get a fresh-context review of the whole diff. Do not request review for documentation, specs, or plans; for small or mechanical diffs; or for content the user will review directly; check those yourself. Verify each finding before applying it, rerun affected checks, and escalate unresolved material choices.
 - End with a concise report: changed paths and behavior, checks run and their results, skipped validation, and residual risks.
+
+## Communication
+
+- Use Mermaid diagrams directly in the conversation when they make workflows, architecture, dependencies, or state transitions easier to understand. Use fenced `mermaid` code blocks, keep diagrams focused, and prefer prose when a diagram adds no value. Do not create diagram files unless asked.
