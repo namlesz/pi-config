@@ -1,5 +1,5 @@
 {
-  "theme": "dark",
+  "theme": "system",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-6.1-sol",
   "defaultThinkingLevel": "medium",
@@ -7,41 +7,51 @@
     "npm:@juicesharp/rpiv-todo",
     "npm:@juicesharp/rpiv-ask-user-question",
     "npm:pi-web-access",
-    "npm:pi-lens",
-    "npm:pi-zentui",
+    {
+      "source": "npm:pi-lens",
+      "skills": [
+        "-skills/pi-lens-write-ast-grep-rule/SKILL.md",
+        "-skills/pi-lens-write-tree-sitter-rule/SKILL.md"
+      ]
+    },
     "npm:@narumitw/pi-usage",
     {
       "source": "npm:@dietrichgebert/ponytail",
       "skills": [
-        "-skills/ponytail-help/SKILL.md"
+        "-skills/ponytail-help/SKILL.md",
+        "-skills/ponytail-gain/SKILL.md"
       ]
     },
     "npm:pi-hashline-edit-pro",
-    "npm:pi-subagents",
-    "npm:pi-jev-skill-suggester",
+    {
+      "source": "npm:pi-subagents",
+      "skills": [
+        "-skills/council-mode/SKILL.md"
+      ]
+    },
     "npm:@narumitw/pi-btw",
     "npm:pi-jev-guardian",
     "npm:pi-hermes-memory",
-    "npm:pi-background-tasks"
+    "npm:pi-background-tasks",
+    "npm:@buyong/pi-claude-bridge",
+    "npm:pi-cc-extensions"
   ],
   "hideThinkingBlock": false,
+  "externalEditor": "code --wait",
   "defaultTools": [
     "+grep",
     "+find",
     "+ls",
     "+codemode"
   ],
-  "enabledModels": [
-    "openai-codex/gpt-6-astra",
-    "openai-codex/gpt-6.1-sol",
-    "openai-codex/gpt-6-luna"
-  ],
   "subagents": {
     "defaultModel": "openai-codex/gpt-6-luna",
     "defaultThinking": "medium",
     "agentOverrides": {
       "scout": {
+        "model": "openai-codex/gpt-6-luna",
         "thinking": "medium",
+        "fast": false,
         "defaultContext": "fresh",
         "tools": [
           "read",
@@ -55,7 +65,9 @@
         ]
       },
       "researcher": {
+        "model": "openai-codex/gpt-6-luna",
         "thinking": "medium",
+        "fast": false,
         "defaultContext": "fresh",
         "tools": [
           "read",
@@ -71,7 +83,9 @@
         ]
       },
       "evidence-auditor": {
+        "model": "openai-codex/gpt-6-luna",
         "thinking": "xhigh",
+        "fast": false,
         "defaultContext": "fresh",
         "tools": [
           "read",
@@ -86,7 +100,9 @@
         ]
       },
       "worker": {
+        "model": "openai-codex/gpt-6-luna",
         "thinking": "high",
+        "fast": false,
         "defaultContext": "fresh",
         "tools": "inherit",
         "extensions": [],
@@ -97,7 +113,9 @@
         ]
       },
       "reviewer": {
+        "model": "openai-codex/gpt-6-luna",
         "thinking": "xhigh",
+        "fast": false,
         "defaultContext": "fresh",
         "tools": [
           "read",
@@ -123,7 +141,9 @@
         ]
       },
       "oracle": {
+        "model": "openai-codex/gpt-6-luna",
         "thinking": "high",
+        "fast": false,
         "defaultContext": "fresh",
         "tools": [
           "read",
@@ -135,7 +155,9 @@
         ]
       },
       "delegate": {
+        "model": "openai-codex/gpt-6-luna",
         "thinking": "high",
+        "fast": false,
         "defaultContext": "fresh",
         "tools": [
           "read",
@@ -148,12 +170,25 @@
           "contact_supervisor",
           "codemode"
         ],
+        "allowNestedSubagents": true,
         "subagentOnlyExtensions": [
           "{{PROFILE}}/npm/node_modules/@dietrichgebert/ponytail/pi-extension/index.js"
-        ],
-        "allowNestedSubagents": true
+        ]
       }
     }
   },
-  "tuiMode": "fullscreen"
+  "tuiMode": "fullscreen",
+  "markdown": {
+    "mermaid": "streaming"
+  },
+  "workingVibe": "cyberpunk 2077",
+  "powerline": {
+    "welcome": false,
+    "preset": "default",
+    "placement": "above"
+  },
+  "showHardwareCursor": true,
+  "terminal": {
+    "showTerminalProgress": false
+  }
 }

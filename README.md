@@ -16,6 +16,12 @@ The installer also writes the bundled Pi Lens user configuration to `~/.pi-lens/
 
 Credentials, sessions/history, caches, secrets, old roles, and retired resources are never shipped or copied into the new profile. Authentication must be repeated. Existing target skills are neither installed nor removed. Orca/Herdr desktop applications are not installed.
 
+## Reference settings
+
+`payload/settings.template.json` mirrors the portable settings of the local reference profile: the system theme, fullscreen UI, hardware cursor, streaming Mermaid, `code --wait` external editor, package skill filters, and explicit non-fast GPT-6 Luna subagent overrides. VS Code's `code` command must be installed separately for the external editor to work. Profile paths are rendered from `{{PROFILE}}`; changelog tracking and other runtime state are omitted.
+
+The package set includes `@buyong/pi-claude-bridge` and `pi-cc-extensions`. The template omits `enabledModels`; each user chooses their own model list. Claude CLI installation and authentication are separate prerequisites; no bridge credentials or machine-specific configuration are bundled. Zentui and `pi-jev-skill-suggester` are no longer included. Pi Lens rule-authoring skills and the subagent `council-mode` skill are filtered out.
+
 ## Optional skills (manual installation)
 
 The installer does not bundle or install these skills. The local reference setup keeps them in `~/.agents/skills/`; install selected skills yourself from a trusted source, preserving each complete skill directory, then expose them to Pi through its `skills` settings or agent-directory `skills/`. Do not assume another machine already has this shared directory.
@@ -42,7 +48,7 @@ These names are an inventory, not verified download sources or a compatibility g
 
 ### Ponytail
 
-Ponytail is installed as the npm package `@dietrichgebert/ponytail` from the settings template, with its `ponytail-help` skill filtered out. It is not part of the manual skill inventory above.
+Ponytail is installed as the npm package `@dietrichgebert/ponytail` from the settings template, with its `ponytail-help` and `ponytail-gain` skills filtered out. It is not part of the manual skill inventory above.
 
 ### Memory data
 
