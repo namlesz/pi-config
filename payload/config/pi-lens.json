@@ -25,7 +25,7 @@
     "mode": "deferred"
   },
   "autofix": {
-    "enabled": true
+    "enabled": false
   },
   "guard": {
     "enabled": false,
@@ -36,7 +36,7 @@
   },
   "actionableWarnings": {
     "enabled": true,
-    "includeLspCodeActions": true,
+    "includeLspCodeActions": false,
     "deltaOnly": true,
     "autoFix": {
       "enabled": false
@@ -44,6 +44,9 @@
   },
   "tools": {
     "lazy": true
+  },
+  "ui": {
+    "issuesStatus": true
   },
   "startup": {
     "scans": {
